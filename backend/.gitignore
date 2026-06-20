@@ -1,0 +1,32 @@
+# Environment and sensitive credential files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+*.pem
+*.key
+credentials.json
+client_secret.json
+secrets.py
+
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache / compilation files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases and dynamic storage
+storage/db.json
