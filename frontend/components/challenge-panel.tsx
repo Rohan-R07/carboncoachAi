@@ -70,7 +70,7 @@ export default function ChallengePanel({ initialChallenges, initialPoints, onPoi
             key={c.id}
             onClick={() => !c.completed && handleComplete(c.id)}
             disabled={c.completed || loadingId === c.id}
-            className={`w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all focus:outline-none ${
+            className={`w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
               c.completed
                 ? "border-slate-100 bg-slate-50/50 text-slate-400"
                 : "border-slate-150 hover:border-emerald-200 text-slate-700 hover:bg-emerald-50/10 cursor-pointer"

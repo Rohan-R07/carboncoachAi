@@ -24,13 +24,12 @@ export default function DashboardPage() {
         setLoading(true);
       }
       setError("");
-      const dashData = await getDashboardData();
+      const [dashData, histData] = await Promise.all([
+        getDashboardData(),
+        getProgressHistory()
+      ]);
       setData(dashData);
-      
-      if (dashData.has_assessment) {
-        const histData = await getProgressHistory();
-        setHistory(histData);
-      }
+      setHistory(histData);
     } catch (err: any) {
       setError(err.message || "Failed to load dashboard data. Ensure the backend server is running.");
     } finally {

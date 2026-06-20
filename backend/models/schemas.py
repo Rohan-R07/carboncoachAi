@@ -99,6 +99,7 @@ class Recommendation(BaseModel):
     impact_score: int
     difficulty_score: int
     priority_score: int
+    explanation: str = ""
 
 class Challenge(BaseModel):
     id: str

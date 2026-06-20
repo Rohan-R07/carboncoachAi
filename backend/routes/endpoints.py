@@ -72,7 +72,7 @@ async def submit_assessment(
         "diet": req.diet,
         "shopping": req.shopping,
         "flights": req.flights,
-        "notes": req.notes,
+        "notes": sanitize_text(req.notes),
         "carbon_data": carbon_data.model_dump(),
         "eco_score": eco_score,
         "largest_contributor": largest,

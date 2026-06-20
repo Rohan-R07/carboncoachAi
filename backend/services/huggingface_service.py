@@ -97,7 +97,7 @@ class HuggingFaceService:
         """
         if not self.client:
             raise ValueError(
-                "Failed: Hugging Face client not initialized. Please configure a valid HF_TOKEN."
+                "Hugging Face API key (HF_TOKEN) is missing or not configured. Please add a valid HF_TOKEN to your backend/.env file."
             )
 
         try:
@@ -111,7 +111,12 @@ class HuggingFaceService:
             return completion.choices[0].message.content or ""
         except Exception as e:
             logger.error(f"Error calling Hugging Face: {e}")
-            raise ValueError(f"Failed: {e}")
+            err_msg = str(e)
+            if "401" in err_msg or "unauthorized" in err_msg.lower() or "invalid username or password" in err_msg.lower():
+                raise ValueError(
+                    "Your Hugging Face API key (HF_TOKEN) is unauthorized or invalid. Please check the HF_TOKEN variable in your backend/.env file."
+                )
+            raise ValueError(err_msg)
 
     def generate_assessment_questions(
         self, latest_assessment: Optional[dict] = None
@@ -194,7 +199,7 @@ class HuggingFaceService:
             return questions
         except Exception as e:
             logger.error(f"Failed CarbonCoach AI questions generation: {e}")
-            raise ValueError(f"Failed: {e}")
+            raise ValueError(str(e))
 
     def analyze_lifestyle(self, req: AssessmentRequest) -> AnalysisResponse:
         """
@@ -232,7 +237,7 @@ class HuggingFaceService:
             )
         except Exception as e:
             logger.error(f"Failed CarbonCoach AI analysis: {e}")
-            raise ValueError(f"Failed: {e}")
+            raise ValueError(str(e))
 
     def generate_roadmap(self, req: AssessmentRequest) -> RoadmapResponse:
         """
@@ -272,7 +277,7 @@ class HuggingFaceService:
             )
         except Exception as e:
             logger.error(f"Failed CarbonCoach AI roadmap: {e}")
-            raise ValueError(f"Failed: {e}")
+            raise ValueError(str(e))
 
     def generate_chat_response(
         self, message: str, assessment: Optional[dict], chat_history: List[dict]
@@ -312,4 +317,4 @@ class HuggingFaceService:
             return self._call_huggingface(prompt, system_instruction)
         except Exception as e:
             logger.error(f"Failed CarbonCoach AI chat response: {e}")
-            return f"Failed: {e}"
+            return f"Chat Error: {e}"

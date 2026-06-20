@@ -1,15 +1,90 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardResponse, AssessmentResponse, Recommendation } from "../lib/api";
 import TrendChart from "./trend-chart";
 import ChallengePanel from "./challenge-panel";
-import { Shield, Sparkles, Award, TrendingDown, CheckSquare, Calendar, ChevronRight, AlertCircle, Leaf, HelpCircle } from "lucide-react";
+import { 
+  Shield, Sparkles, Award, TrendingDown, CheckSquare, Calendar, 
+  ChevronRight, AlertCircle, Leaf, HelpCircle, Eye, CheckCircle2, Sliders 
+} from "lucide-react";
 
 interface DashboardOverviewProps {
   data: DashboardResponse;
   history: AssessmentResponse[];
 }
+
+// Simulated Carbon factors (kg CO2 per year)
+const SIM_TRANSPORT_FACTORS = {
+  "Walk": 0,
+  "Bicycle": 0,
+  "Public Transport": 500,
+  "Car": 3000
+};
+
+const SIM_ELECTRICITY_FACTORS = {
+  "Rarely": 200,
+  "1–4 Hours": 800,
+  "4–8 Hours": 1800,
+  "8+ Hours": 3500
+};
+
+const SIM_DIET_FACTORS = {
+  "Vegan": 500,
+  "Vegetarian": 1000,
+  "Mixed": 2000,
+  "Meat Heavy": 4000
+};
+
+const SIM_SHOPPING_FACTORS = {
+  "Rarely": 100,
+  "Monthly": 300,
+  "Weekly": 800,
+  "Frequently": 2000
+};
+
+const SIM_FLIGHT_FACTORS = {
+  "0": 0,
+  "1–2": 1500,
+  "3–5": 4500,
+  "5+": 9000
+};
+
+// Deductions for Eco Score calculation
+const SIM_TRANSPORT_DEDUCTIONS = {
+  "Walk": 0,
+  "Bicycle": 0,
+  "Public Transport": 5,
+  "Car": 20
+};
+
+const SIM_ELECTRICITY_DEDUCTIONS = {
+  "Rarely": 0,
+  "1–4 Hours": 5,
+  "4–8 Hours": 15,
+  "8+ Hours": 25
+};
+
+const SIM_DIET_DEDUCTIONS = {
+  "Vegan": 0,
+  "Vegetarian": 5,
+  "Mixed": 15,
+  "Meat Heavy": 25
+};
+
+const SIM_SHOPPING_DEDUCTIONS = {
+  "Rarely": 0,
+  "Monthly": 5,
+  "Weekly": 15,
+  "Frequently": 20
+};
+
+const SIM_FLIGHT_DEDUCTIONS = {
+  "0": 0,
+  "1–2": 10,
+  "3–5": 20,
+  "5+": 30
+};
 
 export default function DashboardOverview({ data, history }: DashboardOverviewProps) {
   const latest = data.latest_assessment;
@@ -17,7 +92,109 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
   
   if (!latest) return null;
 
-  // Render the category list for Eco Score explainers
+  // --- What-If Simulator State ---
+  const [simTransportation, setSimTransportation] = useState(latest.transportation);
+  const [simElectricity, setSimElectricity] = useState(latest.electricity);
+  const [simDiet, setSimDiet] = useState(latest.diet);
+  const [simShopping, setSimShopping] = useState(latest.shopping);
+  const [simFlights, setSimFlights] = useState(latest.flights);
+
+  // --- Roadmap Completion State ---
+  const [completedWeeks, setCompletedWeeks] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`roadmap_completed_${latest.id}`);
+        if (stored) {
+          setCompletedWeeks(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error("Failed to load roadmap completed states", e);
+      }
+    }
+  }, [latest.id]);
+
+  const handleToggleWeek = (weekKey: string) => {
+    const isNowCompleted = !completedWeeks[weekKey];
+    const updated = { ...completedWeeks, [weekKey]: isNowCompleted };
+    setCompletedWeeks(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`roadmap_completed_${latest.id}`, JSON.stringify(updated));
+    }
+    
+    // Gamification: Award 50 points per week completion
+    if (isNowCompleted) {
+      setPoints(prev => prev + 50);
+    } else {
+      setPoints(prev => Math.max(0, prev - 50));
+    }
+  };
+
+  // --- What-If Math Recalculation ---
+  const normElec = simElectricity.replace("-", "–");
+  const normFlights = simFlights.replace("-", "–");
+
+  const simTransitVal = SIM_TRANSPORT_FACTORS[simTransportation as keyof typeof SIM_TRANSPORT_FACTORS] || 0;
+  const simElecVal = SIM_ELECTRICITY_FACTORS[normElec as keyof typeof SIM_ELECTRICITY_FACTORS] || 0;
+  const simDietVal = SIM_DIET_FACTORS[simDiet as keyof typeof SIM_DIET_FACTORS] || 0;
+  const simShopVal = SIM_SHOPPING_FACTORS[simShopping as keyof typeof SIM_SHOPPING_FACTORS] || 0;
+  const simFlightVal = SIM_FLIGHT_FACTORS[normFlights as keyof typeof SIM_FLIGHT_FACTORS] || 0;
+
+  const simTotal = simTransitVal + simElecVal + simDietVal + simShopVal + simFlightVal;
+
+  const deductions = 
+    (SIM_TRANSPORT_DEDUCTIONS[simTransportation as keyof typeof SIM_TRANSPORT_DEDUCTIONS] || 0) +
+    (SIM_ELECTRICITY_DEDUCTIONS[normElec as keyof typeof SIM_ELECTRICITY_DEDUCTIONS] || 0) +
+    (SIM_DIET_DEDUCTIONS[simDiet as keyof typeof SIM_DIET_DEDUCTIONS] || 0) +
+    (SIM_SHOPPING_DEDUCTIONS[simShopping as keyof typeof SIM_SHOPPING_DEDUCTIONS] || 0) +
+    (SIM_FLIGHT_DEDUCTIONS[normFlights as keyof typeof SIM_FLIGHT_DEDUCTIONS] || 0);
+
+  const simScore = Math.max(0, 100 - deductions);
+  const carbonSavings = latest.carbon_data.total - simTotal;
+
+  // --- Behavioral Trend Analysis ---
+  const getTrendAnalysis = () => {
+    if (!history || history.length < 2) {
+      const largest = latest.largest_contributor;
+      return {
+        text: `Your biggest emissions driver is currently your ${largest}. Focus on implementing the top recommendation below to start seeing reduction trends in your next assessment.`,
+        badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-100",
+        badge: "Initial Baseline Analysis"
+      };
+    }
+    
+    const current = history[history.length - 1];
+    const prev = history[history.length - 2];
+    const currentTotal = current.carbon_data.total;
+    const prevTotal = prev.carbon_data.total;
+    const diff = currentTotal - prevTotal;
+
+    if (diff < 0) {
+      const percent = Math.round((Math.abs(diff) / prevTotal) * 100);
+      return {
+        text: `Fantastic progress! Your carbon footprint decreased by ${Math.abs(diff).toLocaleString()} kg CO₂/year (${percent}% reduction) compared to your previous assessment, driven by optimizations in your lifestyle.`,
+        badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-100",
+        badge: "Positive Trend Detected"
+      };
+    } else if (diff > 0) {
+      const percent = Math.round((diff / prevTotal) * 100);
+      return {
+        text: `Your footprint increased by ${diff.toLocaleString()} kg CO₂/year (+${percent}%) since your last check. Consider reviewing your ${current.largest_contributor.toLowerCase()} and setting fresh limits.`,
+        badgeColor: "bg-rose-50 text-rose-700 border-rose-100",
+        badge: "Negative Trend Alert"
+      };
+    } else {
+      return {
+        text: "Your carbon footprint has stabilized at your baseline. Try checking off some of your roadmap tasks to drive emissions down further.",
+        badgeColor: "bg-slate-50 text-slate-700 border-slate-100",
+        badge: "Stable Trend"
+      };
+    }
+  };
+
+  const trendAnalysis = getTrendAnalysis();
+
   const getEcoScoreDescriptor = (score: number) => {
     if (score >= 80) return { label: "Excellent (Eco Champion)", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" };
     if (score >= 50) return { label: "Moderate (Getting Green)", color: "text-amber-600", bg: "bg-amber-50 border-amber-100" };
@@ -28,12 +205,18 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
 
   return (
     <div className="space-y-8">
-      {/* Dynamic Alert Banner */}
-      <div className="flex items-start gap-3.5 p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-3xl border border-emerald-700 shadow-md">
-        <Sparkles className="w-5 h-5 text-emerald-300 flex-shrink-0 animate-bounce mt-0.5" />
-        <div>
-          <h4 className="font-display font-bold text-sm tracking-tight">Active Coach Insight</h4>
-          <p className="text-emerald-100 text-xs leading-relaxed mt-1 font-medium">{data.improvement_metrics}</p>
+      {/* Active Coach Insight Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-3xl border border-emerald-700 shadow-md">
+        <div className="flex items-start gap-3.5">
+          <Sparkles className="w-5 h-5 text-emerald-300 flex-shrink-0 animate-bounce mt-0.5" />
+          <div>
+            <h4 className="font-display font-bold text-sm tracking-tight">Active Coach Insight</h4>
+            <p className="text-emerald-100 text-xs leading-relaxed mt-1 font-medium">{data.improvement_metrics}</p>
+          </div>
+        </div>
+        <div className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold self-start md:self-auto ${trendAnalysis.badgeColor}`}>
+          <span className="uppercase tracking-wider mr-1.5">{trendAnalysis.badge}:</span>
+          <span className="font-semibold text-slate-700">{trendAnalysis.text}</span>
         </div>
       </div>
 
@@ -105,6 +288,150 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
         </div>
       </div>
 
+      {/* What-If Simulator section */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-3xl border border-slate-800 p-6 md:p-8 shadow-xl">
+        <div className="flex items-center gap-2 mb-6">
+          <Sliders className="w-5 h-5 text-emerald-400" />
+          <h3 className="font-display font-bold text-lg">What-If Sustainability Simulator</h3>
+        </div>
+        <p className="text-slate-400 text-xs mb-8 max-w-xl leading-relaxed">
+          Toggle options below to simulate different sustainable actions. See how they impact your footprint and score immediately.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Controls */}
+          <div className="lg:col-span-2 space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="sim-transport" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Commute Transport</label>
+                <select 
+                  id="sim-transport"
+                  value={simTransportation} 
+                  onChange={(e) => setSimTransportation(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 text-white text-xs font-semibold p-3.5 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                >
+                  <option value="Walk">Walk</option>
+                  <option value="Bicycle">Bicycle</option>
+                  <option value="Public Transport">Public Transport</option>
+                  <option value="Car">Car</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="sim-electricity" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Electricity Usage</label>
+                <select 
+                  id="sim-electricity"
+                  value={simElectricity} 
+                  onChange={(e) => setSimElectricity(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 text-white text-xs font-semibold p-3.5 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                >
+                  <option value="Rarely">Rarely</option>
+                  <option value="1–4 Hours">1–4 Hours</option>
+                  <option value="4–8 Hours">4–8 Hours</option>
+                  <option value="8+ Hours">8+ Hours</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="sim-diet" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Diet Type</label>
+                <select 
+                  id="sim-diet"
+                  value={simDiet} 
+                  onChange={(e) => setSimDiet(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 text-white text-xs font-semibold p-3.5 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                >
+                  <option value="Vegan">Vegan</option>
+                  <option value="Vegetarian">Vegetarian</option>
+                  <option value="Mixed">Mixed</option>
+                  <option value="Meat Heavy">Meat Heavy</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="sim-shopping" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Shopping Frequency</label>
+                <select 
+                  id="sim-shopping"
+                  value={simShopping} 
+                  onChange={(e) => setSimShopping(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 text-white text-xs font-semibold p-3.5 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                >
+                  <option value="Rarely">Rarely</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Weekly">Weekly</option>
+                  <option value="Frequently">Frequently</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="w-full sm:w-1/2">
+              <label htmlFor="sim-flights" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Annual Flights</label>
+              <select 
+                id="sim-flights"
+                value={simFlights} 
+                onChange={(e) => setSimFlights(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 text-white text-xs font-semibold p-3.5 rounded-xl outline-none focus:border-emerald-500 transition-all cursor-pointer"
+              >
+                <option value="0">0</option>
+                <option value="1–2">1–2</option>
+                <option value="3–5">3–5</option>
+                <option value="5+">5+</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Simulated Outputs */}
+          <div className="bg-slate-800/50 border border-slate-700/60 p-6 rounded-2xl flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block mb-1">Simulated Projection</span>
+              
+              <div>
+                <span className="text-[10px] text-slate-400 font-medium">Estimated Footprint</span>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="font-display font-extrabold text-2xl text-white tracking-tight">
+                    {simTotal.toLocaleString()}
+                  </span>
+                  <span className="text-slate-400 text-xs font-semibold">kg CO₂</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-slate-400 font-medium">Simulated Eco Score</span>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="font-display font-extrabold text-2xl text-emerald-400 tracking-tight">
+                    {simScore}
+                  </span>
+                  <span className="text-slate-400 text-[10px] font-semibold">/ 100</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-700 pt-4 mt-4">
+              {carbonSavings > 0 ? (
+                <div className="bg-emerald-950/40 border border-emerald-900/60 p-3.5 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide block mb-1">Impact Potential</span>
+                  <p className="text-xs text-white leading-relaxed font-semibold">
+                    You would save <span className="text-emerald-400 font-bold">{carbonSavings.toLocaleString()} kg CO₂</span>/year!
+                  </p>
+                </div>
+              ) : carbonSavings < 0 ? (
+                <div className="bg-rose-950/40 border border-rose-900/60 p-3.5 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wide block mb-1">Emission Increase</span>
+                  <p className="text-xs text-white leading-relaxed font-semibold">
+                    This path adds <span className="text-rose-400 font-bold">{Math.abs(carbonSavings).toLocaleString()} kg CO₂</span>/year.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-slate-700/30 border border-slate-700/60 p-3.5 rounded-xl text-center">
+                  <p className="text-xs text-slate-300 leading-relaxed font-semibold">
+                    Same as your current actual footprint.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Breakdown & Challenges section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
@@ -132,29 +459,54 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {data.recommendations.slice(0, 3).map((r, i) => (
-            <div key={i} className="border border-slate-100 p-5 rounded-2xl bg-slate-50/50 hover:bg-slate-50 hover:border-emerald-200 transition-all flex flex-col justify-between min-h-[160px]">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    r.impact === "Critical" || r.impact === "High"
-                      ? "bg-rose-50 text-rose-700 border border-rose-100"
-                      : "bg-teal-50 text-teal-700 border border-teal-100"
-                  }`}>
-                    {r.impact} Impact
-                  </span>
-                  <span className="text-[10px] font-bold bg-slate-200/60 text-slate-600 px-2 py-0.5 rounded-md">
-                    Priority {r.priority_score}
-                  </span>
+          {data.recommendations.slice(0, 3).map((r, i) => {
+            const reductionPct = Math.round((r.reduction / latest.carbon_data.total) * 100) || 0;
+            return (
+              <div key={i} className="border border-slate-100 p-5 rounded-2xl bg-slate-50/50 hover:bg-slate-50 hover:border-emerald-200 transition-all flex flex-col justify-between min-h-[220px]">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      r.impact === "Critical" || r.impact === "High"
+                        ? "bg-rose-50 text-rose-700 border border-rose-100"
+                        : "bg-teal-50 text-teal-700 border border-teal-100"
+                    }`}>
+                      {r.impact} Impact
+                    </span>
+                    <span className="text-[10px] font-bold bg-slate-200/60 text-slate-600 px-2 py-0.5 rounded-md">
+                      Priority {r.priority_score}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-slate-800 text-xs leading-snug">{r.title}</h4>
+                  
+                  {/* Explainable AI block */}
+                  {r.explanation && (
+                    <p className="text-[10px] text-slate-400 leading-normal mt-2 italic font-medium">
+                      {r.explanation}
+                    </p>
+                  )}
                 </div>
-                <h4 className="font-semibold text-slate-800 text-xs leading-snug">{r.title}</h4>
+
+                <div className="mt-4">
+                  {/* Recommendation Impact Scoring progress bar */}
+                  <div className="w-full bg-slate-250 h-1 rounded-full overflow-hidden mt-1 relative">
+                    <div 
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-350" 
+                      style={{ width: `${Math.min(100, reductionPct)}%` }} 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mt-1 text-[9px] font-semibold text-slate-400">
+                    <span>Footprint Impact</span>
+                    <span className="text-emerald-700">-{reductionPct}%</span>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-3 border-t border-slate-100 pt-3 text-[10px] font-semibold text-slate-500">
+                    <span>Diff: <span className="text-slate-800 font-bold">{r.difficulty}</span></span>
+                    <span className="text-emerald-700 font-bold">-{r.reduction} kg CO₂/yr</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between mt-4 border-t border-slate-100 pt-3 text-[10px] font-semibold text-slate-500">
-                <span>Diff: <span className="text-slate-800 font-bold">{r.difficulty}</span></span>
-                <span className="text-emerald-700 font-bold">-{r.reduction} kg CO₂/yr</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -166,15 +518,34 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
             <h3 className="font-display font-bold text-slate-800 text-lg">Personalized 30-Day Roadmap</h3>
           </div>
           <p className="text-slate-500 text-xs mb-8 max-w-xl leading-relaxed">
-            A week-by-week actionable plan customized by CarbonCoach AI. Focus on completing these goals.
+            A week-by-week actionable plan customized by CarbonCoach AI. Focus on completing these goals. Checking off a completed week awards you <span className="text-emerald-600 font-bold">+50 Eco Points</span>!
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
             {/* Week 1 */}
-            <div className="relative border border-slate-100 bg-slate-50/20 p-5 rounded-2xl flex flex-col justify-between">
+            <div className={`relative border p-5 rounded-2xl flex flex-col justify-between transition-all ${
+              completedWeeks.week1 
+                ? "border-emerald-200 bg-emerald-50/10 shadow-sm" 
+                : "border-slate-100 bg-slate-50/20"
+            }`}>
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-2 block">Week 1 Goal</span>
-                <h4 className="font-bold text-slate-800 text-xs leading-relaxed mb-2">{data.roadmap.week1.action}</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Week 1 Goal</span>
+                  <button 
+                    onClick={() => handleToggleWeek("week1")}
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                      completedWeeks.week1 
+                        ? "bg-emerald-500 border-emerald-500 text-white" 
+                        : "border-slate-350 hover:border-emerald-500 hover:bg-emerald-50/10 text-transparent"
+                    }`}
+                    aria-label="Mark week 1 as complete"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <h4 className={`font-bold text-slate-800 text-xs leading-relaxed mb-2 ${completedWeeks.week1 ? "line-through text-slate-400" : ""}`}>
+                  {data.roadmap.week1.action}
+                </h4>
                 <p className="text-slate-500 text-[10px] leading-relaxed mb-3">Goal: {data.roadmap.week1.goal}</p>
               </div>
               <p className="text-emerald-800 bg-emerald-50 text-[10px] font-bold p-2.5 rounded-xl border border-emerald-100/60 mt-2">
@@ -183,10 +554,29 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
             </div>
             
             {/* Week 2 */}
-            <div className="relative border border-slate-100 bg-slate-50/20 p-5 rounded-2xl flex flex-col justify-between">
+            <div className={`relative border p-5 rounded-2xl flex flex-col justify-between transition-all ${
+              completedWeeks.week2 
+                ? "border-emerald-200 bg-emerald-50/10 shadow-sm" 
+                : "border-slate-100 bg-slate-50/20"
+            }`}>
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-2 block">Week 2 Goal</span>
-                <h4 className="font-bold text-slate-800 text-xs leading-relaxed mb-2">{data.roadmap.week2.action}</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Week 2 Goal</span>
+                  <button 
+                    onClick={() => handleToggleWeek("week2")}
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                      completedWeeks.week2 
+                        ? "bg-emerald-500 border-emerald-500 text-white" 
+                        : "border-slate-350 hover:border-emerald-500 hover:bg-emerald-50/10 text-transparent"
+                    }`}
+                    aria-label="Mark week 2 as complete"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <h4 className={`font-bold text-slate-800 text-xs leading-relaxed mb-2 ${completedWeeks.week2 ? "line-through text-slate-400" : ""}`}>
+                  {data.roadmap.week2.action}
+                </h4>
                 <p className="text-slate-500 text-[10px] leading-relaxed mb-3">Goal: {data.roadmap.week2.goal}</p>
               </div>
               <p className="text-emerald-800 bg-emerald-50 text-[10px] font-bold p-2.5 rounded-xl border border-emerald-100/60 mt-2">
@@ -195,10 +585,29 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
             </div>
 
             {/* Week 3 */}
-            <div className="relative border border-slate-100 bg-slate-50/20 p-5 rounded-2xl flex flex-col justify-between">
+            <div className={`relative border p-5 rounded-2xl flex flex-col justify-between transition-all ${
+              completedWeeks.week3 
+                ? "border-emerald-200 bg-emerald-50/10 shadow-sm" 
+                : "border-slate-100 bg-slate-50/20"
+            }`}>
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-2 block">Week 3 Goal</span>
-                <h4 className="font-bold text-slate-800 text-xs leading-relaxed mb-2">{data.roadmap.week3.action}</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Week 3 Goal</span>
+                  <button 
+                    onClick={() => handleToggleWeek("week3")}
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                      completedWeeks.week3 
+                        ? "bg-emerald-500 border-emerald-500 text-white" 
+                        : "border-slate-350 hover:border-emerald-500 hover:bg-emerald-50/10 text-transparent"
+                    }`}
+                    aria-label="Mark week 3 as complete"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <h4 className={`font-bold text-slate-800 text-xs leading-relaxed mb-2 ${completedWeeks.week3 ? "line-through text-slate-400" : ""}`}>
+                  {data.roadmap.week3.action}
+                </h4>
                 <p className="text-slate-500 text-[10px] leading-relaxed mb-3">Goal: {data.roadmap.week3.goal}</p>
               </div>
               <p className="text-emerald-800 bg-emerald-50 text-[10px] font-bold p-2.5 rounded-xl border border-emerald-100/60 mt-2">
@@ -207,10 +616,29 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
             </div>
 
             {/* Week 4 */}
-            <div className="relative border border-slate-100 bg-slate-50/20 p-5 rounded-2xl flex flex-col justify-between">
+            <div className={`relative border p-5 rounded-2xl flex flex-col justify-between transition-all ${
+              completedWeeks.week4 
+                ? "border-emerald-200 bg-emerald-50/10 shadow-sm" 
+                : "border-slate-100 bg-slate-50/20"
+            }`}>
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-2 block">Week 4 Goal</span>
-                <h4 className="font-bold text-slate-800 text-xs leading-relaxed mb-2">{data.roadmap.week4.action}</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Week 4 Goal</span>
+                  <button 
+                    onClick={() => handleToggleWeek("week4")}
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                      completedWeeks.week4 
+                        ? "bg-emerald-500 border-emerald-500 text-white" 
+                        : "border-slate-350 hover:border-emerald-500 hover:bg-emerald-50/10 text-transparent"
+                    }`}
+                    aria-label="Mark week 4 as complete"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <h4 className={`font-bold text-slate-800 text-xs leading-relaxed mb-2 ${completedWeeks.week4 ? "line-through text-slate-400" : ""}`}>
+                  {data.roadmap.week4.action}
+                </h4>
                 <p className="text-slate-500 text-[10px] leading-relaxed mb-3">Goal: {data.roadmap.week4.goal}</p>
               </div>
               <p className="text-emerald-800 bg-emerald-50 text-[10px] font-bold p-2.5 rounded-xl border border-emerald-100/60 mt-2">

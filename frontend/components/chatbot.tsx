@@ -65,7 +65,7 @@ export default function Chatbot() {
             </div>
             <button 
               onClick={() => setIsOpen(false)}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-slate-400 hover:text-white transition-colors focus:ring-2 focus:ring-emerald-500 focus:outline-none rounded-lg"
               aria-label="Close chat window"
             >
               <X className="w-5 h-5" />
@@ -73,7 +73,7 @@ export default function Chatbot() {
           </div>
 
           {/* Conversation list */}
-          <div ref={scrollRef} className="flex-grow p-4 overflow-y-auto space-y-4 bg-slate-50/50">
+          <div ref={scrollRef} className="flex-grow p-4 overflow-y-auto space-y-4 bg-slate-50/50" role="log" aria-live="polite">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
                 <div 
@@ -100,12 +100,12 @@ export default function Chatbot() {
 
           {/* Prompt starters */}
           {messages.length === 1 && (
-            <div className="p-3 border-t border-slate-100 bg-white grid grid-cols-2 gap-2">
+            <div className="p-3 border-t border-slate-100 bg-white grid grid-cols-2 gap-2" role="group" aria-label="Suggested starter prompts">
               {STARTER_PROMPTS.map(p => (
                 <button
                   key={p}
                   onClick={() => handleSend(p)}
-                  className="text-[10px] text-left font-semibold text-slate-600 border border-slate-200 p-2 rounded-xl hover:border-emerald-300 hover:bg-emerald-50/10 transition-all focus:outline-none"
+                  className="text-[10px] text-left font-semibold text-slate-600 border border-slate-200 p-2 rounded-xl hover:border-emerald-300 hover:bg-emerald-50/10 transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 >
                   {p}
                 </button>
@@ -124,12 +124,12 @@ export default function Chatbot() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything..."
               maxLength={400}
-              className="flex-grow p-3 border border-slate-150 rounded-xl text-xs outline-none focus:border-emerald-500 font-medium transition-all"
+              className="flex-grow p-3 border border-slate-150 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium transition-all"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center flex-shrink-0"
+              className="p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center justify-center flex-shrink-0 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               aria-label="Send message"
             >
               <Send className="w-3.5 h-3.5" />
@@ -141,7 +141,7 @@ export default function Chatbot() {
       {/* Launcher Bubble */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-slate-900 hover:bg-emerald-600 rounded-full text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 hover:rotate-12"
+        className="w-14 h-14 bg-slate-900 hover:bg-emerald-600 rounded-full text-white shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 hover:rotate-12 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
         aria-label="Toggle AI Sustainability Chatbot"
       >
         <MessageSquare className="w-6 h-6" />

@@ -152,7 +152,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=1500,
             impact_score=4,
             difficulty_score=3,
-            priority_score=0
+            priority_score=0,
+            explanation="Car commuting is your largest emission source. Swapping to public transit or cycling could save 1,500 kg CO2/year."
         ))
         recommendations_pool.append(Recommendation(
             title="Carpool or Practice Eco-Driving Techniques",
@@ -161,7 +162,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=800,
             impact_score=3,
             difficulty_score=2,
-            priority_score=0
+            priority_score=0,
+            explanation="Since you rely on a car, carpooling and maintaining steady speeds can reduce your fuel usage and emissions by up to 25%."
         ))
     elif req.transportation == "Public Transport":
         recommendations_pool.append(Recommendation(
@@ -171,7 +173,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=200,
             impact_score=2,
             difficulty_score=2,
-            priority_score=0
+            priority_score=0,
+            explanation="Using active transport like walking or biking for short trips is a low-difficulty habit that eliminates localized car start emissions."
         ))
 
     # Electricity
@@ -184,7 +187,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=450,
             impact_score=4,
             difficulty_score=2,
-            priority_score=0
+            priority_score=0,
+            explanation="Your high electricity usage (4-8+ hours of peak appliances) can be reduced easily by setting your thermostat 2°C higher in summer or lower in winter."
         ))
         if elec_key == "8+ Hours":
             recommendations_pool.append(Recommendation(
@@ -194,7 +198,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
                 reduction=1200,
                 impact_score=5,
                 difficulty_score=4,
-                priority_score=0
+                priority_score=0,
+                explanation="With more than 8 hours of high electricity usage daily, transitioning to solar power or a green tariff eliminates grid-based fossil fuel emissions."
             ))
     if elec_key != "Rarely":
         recommendations_pool.append(Recommendation(
@@ -204,7 +209,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=150,
             impact_score=2,
             difficulty_score=1,
-            priority_score=0
+            priority_score=0,
+            explanation="Switching to LED bulbs and shutting down standby devices eliminates 'vampire draw', which accounts for up to 10% of household power."
         ))
 
     # Diet
@@ -216,7 +222,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=1800,
             impact_score=4,
             difficulty_score=3,
-            priority_score=0
+            priority_score=0,
+            explanation="Meat-heavy diets have a very high methane footprint. Shifting to plant-based options significantly lowers land and water use impact."
         ))
         recommendations_pool.append(Recommendation(
             title="Implement 'Meatless Mondays' and Halve Red Meat Consumption",
@@ -225,7 +232,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=600,
             impact_score=3,
             difficulty_score=1,
-            priority_score=0
+            priority_score=0,
+            explanation="Reducing red meat consumption by half or dedicating one day a week to plant meals is an easy gateway to low-emission eating."
         ))
     elif req.diet == "Mixed":
         recommendations_pool.append(Recommendation(
@@ -235,7 +243,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=600,
             impact_score=3,
             difficulty_score=2,
-            priority_score=0
+            priority_score=0,
+            explanation="Adding more plant meals and purchasing locally produced ingredients reduces transportation emissions associated with food shipping."
         ))
         recommendations_pool.append(Recommendation(
             title="Participate in Weekly Vegetarian Challenges",
@@ -244,7 +253,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=250,
             impact_score=2,
             difficulty_score=1,
-            priority_score=0
+            priority_score=0,
+            explanation="Joining weekly vegetarian challenges builds habits while saving about 250 kg CO2/year over mixed diets."
         ))
 
     # Shopping
@@ -256,7 +266,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=500,
             impact_score=3,
             difficulty_score=2,
-            priority_score=0
+            priority_score=0,
+            explanation="Weekly or frequent shopping increases production emissions. Buying pre-owned extends product lifespans and reduces demand for new manufacturing."
         ))
     recommendations_pool.append(Recommendation(
         title="Reduce Single-Use Plastics and Minimize Packaged Goods",
@@ -265,7 +276,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
         reduction=100,
         impact_score=1,
         difficulty_score=1,
-        priority_score=0
+        priority_score=0,
+        explanation="Minimizing packaged goods reduces manufacturing and waste emissions, helping lower your overall consumer footprint."
     ))
 
     # Flights
@@ -278,7 +290,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=4000,
             impact_score=5,
             difficulty_score=3,
-            priority_score=0
+            priority_score=0,
+            explanation="Frequent flights (3+ per year) contribute immensely to your footprint. Reducing one long-haul flight yields the largest single carbon saving."
         ))
     if flight_key != "0":
         recommendations_pool.append(Recommendation(
@@ -288,7 +301,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=400,
             impact_score=3,
             difficulty_score=1,
-            priority_score=0
+            priority_score=0,
+            explanation="Since you fly, buying gold-standard carbon offsets helps fund renewable projects that balance out your high-altitude flight emissions."
         ))
 
     # Fallback to ensure we have a robust list of at least 3
@@ -300,7 +314,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=80,
             impact_score=2,
             difficulty_score=2,
-            priority_score=0
+            priority_score=0,
+            explanation="Composting organic waste prevents anaerobic decomposition in landfills, reducing methane emissions."
         ))
         recommendations_pool.append(Recommendation(
             title="Opt for Digital Invoices & Paperless Deliveries",
@@ -309,7 +324,8 @@ def generate_recommendations(req: AssessmentRequest) -> List[Recommendation]:
             reduction=20,
             impact_score=1,
             difficulty_score=1,
-            priority_score=0
+            priority_score=0,
+            explanation="Choosing paperless billing is a simple, zero-effort adjustment that reduces paper manufacturing waste and logistics emissions."
         ))
 
     # Calculate Priority Score and set it

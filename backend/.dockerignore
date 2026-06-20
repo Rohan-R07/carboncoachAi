@@ -1,0 +1,34 @@
+# Git files
+.git
+.gitignore
+
+# Environment configurations and keys
+.env
+.env.template
+*.env
+
+# Local python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache & bytecode
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pytest and coverage logs
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases and tests
+storage/db.json
+tests/
+
+# Docker build configs
+Dockerfile
+.dockerignore
