@@ -18,7 +18,7 @@ CarbonCoach AI consists of a **FastAPI backend** running Python (deployed on Goo
 2. **Eco Score Engine**: Rule-based scoring reflecting sustainability baseline deductions.
 3. **What Should I Fix First Engine**: Priority engine ranking recommendations by impact and ease.
 4. **Daily Challenges & Points**: Gamified micro-habits awarding Eco Points.
-5. **AI Roadmaps & Chatbot**: Gemini 2.5 Flash integrations generating weekly roadmaps and responding to custom sustainability queries in context of user carbon profiles.
+5. **AI Roadmaps & Chatbot**: Hugging Face API integrations generating weekly roadmaps and responding to custom sustainability queries in context of user carbon profiles.
 
 ---
 
@@ -42,7 +42,7 @@ CarbonCoach AI consists of a **FastAPI backend** running Python (deployed on Goo
                                       |          |
                                       v          v
                                 +----------+   +------------------+
-                                | db.json  |   | Gemini 2.5 Flash |
+                                | db.json  |   | Hugging Face API |
                                 +----------+   +------------------+
 ```
 
@@ -64,7 +64,7 @@ CarbonCoach AI consists of a **FastAPI backend** running Python (deployed on Goo
                                       |          |
                                       v          v
                                 +----------+   +------------------+
-                                |  Cloud   |   | Gemini 2.5 Flash |
+                                |  Cloud   |   | Hugging Face API |
                                 |Firestore |   +------------------+
                                 +----------+
 ```
@@ -88,8 +88,8 @@ CarbonCoach AI consists of a **FastAPI backend** running Python (deployed on Goo
 ---
 
 ## 5. AI Integration
-- **Google Gemini 2.5 Flash API**: Integrated using the Google Client.
-- **Graceful Degradation**: Fallback mock generation system executes automatically when the Gemini API key is missing or invalid, ensuring 100% service uptime during evaluations.
+- **Hugging Face Inference API**: Integrated using the Hugging Face API Client.
+- **Graceful Degradation**: Fallback mock generation system executes automatically when the Hugging Face API token is missing or invalid, ensuring 100% service uptime during evaluations.
 - **Context-Aware Prompting**: Chat history and carbon baseline metrics are appended into system instructions, enabling highly personalized advice.
 
 ---
@@ -134,10 +134,10 @@ CarbonCoach AI consists of a **FastAPI backend** running Python (deployed on Goo
    source venv/bin/activate  # On Windows: .\venv\Scripts\activate
    pip install -r requirements.txt
    ```
-3. Create your `.env` file from the template and fill in your Gemini API key:
+3. Create your `.env` file from the template and fill in your Hugging Face API token:
    ```bash
    cp .env.template .env
-   # Edit .env and enter: GEMINI_API_KEY=AIzaSy...
+   # Edit .env and enter: HF_TOKEN=hf_...
    ```
 4. Run the backend server:
    ```bash
@@ -174,7 +174,7 @@ The backend is packaged inside a lightweight production Docker container and dep
 gcloud run deploy carboncoach-api --source . --region asia-south1 --project carboncoachai
 ```
 Make sure to configure the environment variables in your Cloud Run settings:
-*   `GEMINI_API_KEY`: Google Gemini credential key.
+*   `HF_TOKEN`: Hugging Face API token.
 *   `ENVIRONMENT`: Set to `production` to activate Firestore database mode.
 
 ### Database Setup (GCP Firestore)
@@ -205,6 +205,6 @@ The frontend is hosted on Vercel and builds automatically from the Git repositor
 ---
 
 ## 11. Future Scope
-- **Real utility bill OCR**: Parse electricity and heating footprints directly from uploads using Gemini.
+- **Real utility bill OCR**: Parse electricity and heating footprints directly from uploads using Hugging Face.
 - **Stripe/Eco integrations**: Allow carbon offset purchasing directly from the recommendations card.
 - **Leaderboards**: Team footprint tracking for corporate ESG goals.
