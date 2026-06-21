@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     HOST: str = "127.0.0.1"
     ENVIRONMENT: str = "development"
+    BACKEND_URL: Optional[str] = None
 
     # Use pydantic-settings to load variables from .env
     model_config = SettingsConfigDict(

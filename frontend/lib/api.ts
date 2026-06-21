@@ -1,4 +1,4 @@
-export const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://carboncoach-api-366985234126.asia-south1.run.app/";
+export const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://carboncoach-api-366985234126.asia-south1.run.app";
 
 export interface CarbonData {
   transportation: number;
