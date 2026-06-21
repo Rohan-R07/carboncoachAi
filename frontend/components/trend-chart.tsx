@@ -190,7 +190,7 @@ export default function TrendChart({ currentAssessment, history }: TrendChartPro
                 fill="url(#colorProjected)" 
               />
               <Line 
-                type="dashed" 
+                type="monotone" 
                 dataKey="TargetLimit" 
                 name="Green Target"
                 stroke="#ef4444" 

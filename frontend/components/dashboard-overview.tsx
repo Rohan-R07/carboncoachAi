@@ -2,11 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { DashboardResponse, AssessmentResponse, Recommendation } from "../lib/api";
-import TrendChart from "./trend-chart";
-import ChallengePanel from "./challenge-panel";
+import dynamic from "next/dynamic";
+
+const TrendChart = dynamic(() => import("./trend-chart"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-center animate-pulse text-xs text-slate-400 font-semibold">
+      Loading chart visualization...
+    </div>
+  ),
+});
+
+const ChallengePanel = dynamic(() => import("./challenge-panel"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-96 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-center animate-pulse text-xs text-slate-400 font-semibold">
+      Loading daily challenges...
+    </div>
+  ),
+});
+
 import { 
-  Shield, Sparkles, Award, TrendingDown, CheckSquare, Calendar, 
-  ChevronRight, AlertCircle, Leaf, HelpCircle, Eye, CheckCircle2, Sliders 
+  Sparkles, Award, TrendingDown, CheckSquare, Calendar, 
+  Leaf, CheckCircle2, Sliders 
 } from "lucide-react";
 
 interface DashboardOverviewProps {

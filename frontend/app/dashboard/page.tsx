@@ -4,9 +4,19 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getDashboardData, getProgressHistory, DashboardResponse, AssessmentResponse, resetUserData } from "../../lib/api";
-import DashboardOverview from "../../components/dashboard-overview";
-import Chatbot from "../../components/chatbot";
+import dynamic from "next/dynamic";
 import { Leaf, LayoutDashboard, ClipboardList, RefreshCw, LogOut, Loader2, Award, Sparkles, Trash2 } from "lucide-react";
+
+const DashboardOverview = dynamic(() => import("../../components/dashboard-overview"), {
+  loading: () => (
+    <div className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+      <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mb-3" />
+      <span className="text-slate-500 text-xs font-semibold">Loading Eco Hub...</span>
+    </div>
+  ),
+});
+
+const Chatbot = dynamic(() => import("../../components/chatbot"), { ssr: false });
 
 export default function DashboardPage() {
   const router = useRouter();
