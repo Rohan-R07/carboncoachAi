@@ -22,7 +22,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Set up CORS middleware to allow connection from Next.js frontend or Firebase Hosting domains
+# Set up CORS middleware to allow connection from Next.js frontend or Vercel domains
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
@@ -40,7 +40,7 @@ if env_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.web\.app|https://.*\.firebaseapp\.com",
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

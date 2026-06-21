@@ -100,7 +100,7 @@ CarbonCoach AI consists of a **FastAPI backend** running Python (deployed on Goo
 3. **Rate Limiting**: IP-based Token Bucket limiter protecting routes against abuse.
 4. **Secret Protection**: Environmental isolation using Pydantic Settings and GCP Secret Manager / Environment variables.
 5. **Robust CORS Control**: Dynamic FastAPI CORS configuration using wildcard matching to support Vercel preview/branch URLs alongside standard localhost ports:
-   `allow_origin_regex = r"https://.*\.vercel\.app|https://.*\.web\.app|https://.*\.firebaseapp\.com"`
+   `allow_origin_regex = r"https://.*\.vercel\.app"`
 6. **State Persistence**: Hybrid storage layer automatically selecting Cloud Firestore for production and fallback `db.json` files for local development.
 
 ---
