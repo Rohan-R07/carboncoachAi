@@ -1,5 +1,8 @@
 # CarbonCoach AI
 
+🚀 **Live Frontend Deployment:** [https://frontend-drab-ten-8l94eaud41.vercel.app](https://frontend-drab-ten-8l94eaud41.vercel.app)  
+🔌 **Production API Endpoint:** [https://carboncoach-api-366985234126.asia-south1.run.app](https://carboncoach-api-366985234126.asia-south1.run.app)
+
 CarbonCoach AI is an enterprise-grade, AI-powered decision support assistant designed to help individuals **Understand, Track, and Reduce** their carbon footprint. By combining mathematical rule-based metrics with personalized AI behavioral analysis, CarbonCoach AI guides users from general climate awareness to targeted, daily habit changes.
 
 ---
