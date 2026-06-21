@@ -13,7 +13,7 @@ Climate action can feel overwhelming for individuals due to a lack of clear base
 ---
 
 ## 2. Solution Overview
-CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 15 client** running TypeScript. The app features:
+CarbonCoach AI consists of a **FastAPI backend** running Python (deployed on Google Cloud Run) and a **Next.js 15 client** running TypeScript (deployed on Vercel). The app features:
 1. **Guided Assessment Form**: Accessibility-focused questionnaire mapping transportation, energy, diet, and flights.
 2. **Eco Score Engine**: Rule-based scoring reflecting sustainability baseline deductions.
 3. **What Should I Fix First Engine**: Priority engine ranking recommendations by impact and ease.
@@ -23,6 +23,8 @@ CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 
 ---
 
 ## 3. Architecture
+
+### Local Development Flow
 ```
                                  +--------------------+
                                  |  Next.js 15 Client |
@@ -39,13 +41,36 @@ CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 
                                     Writes       Payload
                                       |          |
                                       v          v
-                            +---------+--+   +---+--------------+
-                            | db.json DB |   | Gemini 2.5 Flash |
-                            +------------+   +------------------+
+                                +----------+   +------------------+
+                                | db.json  |   | Gemini 2.5 Flash |
+                                +----------+   +------------------+
+```
+
+### Production Cloud Flow
+```
+                                 +--------------------+
+                                 |   Vercel Hosting   | (Next.js Frontend)
+                                 +---------+----------+
+                                           |
+                                       HTTPS Request
+                                           |
+                                           v
+                                 +---------+----------+
+                                 |  Google Cloud Run  | (FastAPI Backend)
+                                 +----+----------+----+
+                                      |          |
+                                   Firestore   Client
+                                   Read/Write   SDK
+                                      |          |
+                                      v          v
+                                +----------+   +------------------+
+                                |  Cloud   |   | Gemini 2.5 Flash |
+                                |Firestore |   +------------------+
+                                +----------+
 ```
 
 ### Folder Structure
-- `backend/`: Configuration management, database services, schemas, calculator math, endpoints, and LLM orchestration.
+- `backend/`: Configuration management, Firestore database services, schemas, calculator math, endpoints, and LLM orchestration.
 - `frontend/`: App router layouts, page wrappers, reusable UI components, and API client layers.
 - `tests/`: Unit and api-level integration tests.
 
@@ -54,7 +79,8 @@ CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 
 ## 4. Feature Breakdown
 - **Lifestyle Critique & Summary**: Automated qualitative feedback critiquing habits.
 - **Carbon Footprint Calculator**: Core mathematical engine splitting transit, food, utilities, shopping, and flight impacts.
-- **Priority Recommendation Engine**: Priority sorting utilizing $\text{Priority} = (\text{Impact} \times 3) + (5 - \text{Difficulty}) \times 2$.
+- **Priority Recommendation Engine**: Priority sorting utilizing:
+  $$\text{Priority} = (\text{Impact} \times 3) + (5 - \text{Difficulty}) \times 2$$
 - **30-Day Calendar Roadmap**: Custom 4-week habit-builder.
 - **Daily Eco Challenges**: Tracker log supporting micro-habits.
 - **Impact Dashboard**: Charts showing carbon category distribution and progress history.
@@ -62,17 +88,20 @@ CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 
 ---
 
 ## 5. AI Integration
-- **Google Gemini 2.5 Flash API**: Integrated using the `google-genai` Client.
+- **Google Gemini 2.5 Flash API**: Integrated using the Google Client.
 - **Graceful Degradation**: Fallback mock generation system executes automatically when the Gemini API key is missing or invalid, ensuring 100% service uptime during evaluations.
 - **Context-Aware Prompting**: Chat history and carbon baseline metrics are appended into system instructions, enabling highly personalized advice.
 
 ---
 
-## 6. Security Measures
+## 6. Security & Infrastructure Measures
 1. **Input Sanitization**: Pydantic input validation combined with custom Regex character filters stripping potential HTML tags or injection commands.
 2. **Prompt Injection Mitigation**: Strict system boundaries with input size limits (max 500 characters) and jailbreak term blocklists.
 3. **Rate Limiting**: IP-based Token Bucket limiter protecting routes against abuse.
-4. **Secret Protection**: Environmental isolation using Pydantic Settings.
+4. **Secret Protection**: Environmental isolation using Pydantic Settings and GCP Secret Manager / Environment variables.
+5. **Robust CORS Control**: Dynamic FastAPI CORS configuration using wildcard matching to support Vercel preview/branch URLs alongside standard localhost ports:
+   `allow_origin_regex = r"https://.*\.vercel\.app|https://.*\.web\.app|https://.*\.firebaseapp\.com"`
+6. **State Persistence**: Hybrid storage layer automatically selecting Cloud Firestore for production and fallback `db.json` files for local development.
 
 ---
 
@@ -92,9 +121,9 @@ CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 
 
 ---
 
-## 9. Setup Instructions
+## 9. Setup & Deployment Instructions
 
-### Backend Setup
+### Local Backend Setup
 1. Navigate to the backend directory:
    ```bash
    cd backend
@@ -115,7 +144,7 @@ CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 
    uvicorn app:app --reload --port 8000
    ```
 
-### Frontend Setup
+### Local Frontend Setup
 1. Navigate to the frontend directory:
    ```bash
    cd ../frontend
@@ -124,15 +153,58 @@ CarbonCoach AI consists of a **FastAPI backend** running Python and a **Next.js 
    ```bash
    npm install
    ```
-3. Run the development server:
+3. Create a `.env` file:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8000
+   ```
+4. Run the development server:
    ```bash
    npm run dev
    ```
-4. Access the web app at `http://localhost:3000`.
+5. Access the web app at `http://localhost:3000`.
 
 ---
 
-## 10. Future Scope
+## 10. Deployment to Production
+
+### Backend Deployment (Google Cloud Run)
+The backend is packaged inside a lightweight production Docker container and deployed to Google Cloud Run:
+```bash
+# Deploys service directly using Cloud Build to package the Docker container
+gcloud run deploy carboncoach-api --source . --region asia-south1 --project carboncoachai
+```
+Make sure to configure the environment variables in your Cloud Run settings:
+*   `GEMINI_API_KEY`: Google Gemini credential key.
+*   `ENVIRONMENT`: Set to `production` to activate Firestore database mode.
+
+### Database Setup (GCP Firestore)
+In production, Cloud Run requires Firestore:
+1. Enable the Firestore API:
+   ```bash
+   gcloud services enable firestore.googleapis.com --project carboncoachai
+   ```
+2. Create the default database in Native mode:
+   ```bash
+   gcloud firestore databases create --location=asia-south1 --type=firestore-native --project carboncoachai
+   ```
+
+### Frontend Deployment (Vercel)
+The frontend is hosted on Vercel and builds automatically from the Git repository:
+1. Connect your repository to Vercel.
+2. Link the folder using Vercel CLI:
+   ```bash
+   npx vercel link
+   ```
+3. Configure the Environment Variables:
+   *   `NEXT_PUBLIC_API_URL`: Set to your deployed Cloud Run URL (e.g. `https://carboncoach-api-366985234126.asia-south1.run.app`).
+4. Trigger production deploy:
+   ```bash
+   npx vercel --prod
+   ```
+
+---
+
+## 11. Future Scope
 - **Real utility bill OCR**: Parse electricity and heating footprints directly from uploads using Gemini.
 - **Stripe/Eco integrations**: Allow carbon offset purchasing directly from the recommendations card.
 - **Leaderboards**: Team footprint tracking for corporate ESG goals.
