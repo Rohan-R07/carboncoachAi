@@ -1,0 +1,26 @@
+{
+  "apphosting": [
+    {
+      "backendId": "carboncoachai",
+      "rootDir": "Y",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions"
+      ]
+    },
+    {
+      "backendId": "carboncoachai",
+      "rootDir": ".",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions"
+      ]
+    }
+  ]
+}
