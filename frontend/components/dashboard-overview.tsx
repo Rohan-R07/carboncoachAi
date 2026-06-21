@@ -92,12 +92,84 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
   
   if (!latest) return null;
 
+  // --- Sustainability Achievement System Math ---
+  const getLevelInfo = (pts: number) => {
+    if (pts >= 500) return { name: "Level 4: Forest Guardian", badge: "🏆", nextLimit: 1000, label: "Eco Legend" };
+    if (pts >= 250) return { name: "Level 3: Oak", badge: "🌳", nextLimit: 500, label: "Green Practitioner" };
+    if (pts >= 100) return { name: "Level 2: Sapling", badge: "🌱", nextLimit: 250, label: "Aspiring Advocate" };
+    return { name: "Level 1: Seedling", badge: "🍃", nextLimit: 100, label: "Green Starter" };
+  };
+  const levelInfo = getLevelInfo(points);
+  const levelProgress = Math.min(100, Math.round((points / levelInfo.nextLimit) * 100));
+
+  const badgesList = [
+    { id: "transit", icon: "🚶", name: "Transit Pioneer", desc: "Use eco-friendly commuting", unlocked: latest.transportation !== "Car" },
+    { id: "power", icon: "💡", name: "Vampire Slayer", desc: "Energy usage under 4 hours", unlocked: ["Rarely", "1–4 Hours"].includes(latest.electricity.replace("-", "–")) },
+    { id: "diet", icon: "🥗", name: "Plant Champion", desc: "Eat vegetarian or vegan meals", unlocked: ["Vegan", "Vegetarian"].includes(latest.diet) },
+    { id: "shopping", icon: "🛍️", name: "Mindful Shopper", desc: "Shop monthly or rarely", unlocked: ["Rarely", "Monthly"].includes(latest.shopping) },
+    { id: "flights", icon: "✈️", name: "Fly Light", desc: "Take zero flights per year", unlocked: latest.flights === "0" },
+    { id: "elite", icon: "🏆", name: "Eco Elite", desc: "Score over 300 Eco Points", unlocked: points >= 300 }
+  ];
+
+  // --- What-If Difficulty and Savings Scoring ---
+  const getDiffScore = (val: string) => {
+    const clean = val.replace("-", "–");
+    if (["Walk", "Bicycle", "Rarely", "0", "Monthly"].includes(clean)) return 1;
+    if (["1–4 Hours", "1–2", "Vegetarian", "Vegan"].includes(clean)) return 2;
+    if (["Public Transport", "Mixed", "Weekly"].includes(clean)) return 3;
+    if (["Car", "4–8 Hours", "3–5", "Frequently"].includes(clean)) return 4;
+    if (["8+ Hours", "5+"].includes(clean)) return 5;
+    return 3;
+  };
+
+  const getSavingsScore = (val: string) => {
+    const clean = val.replace("-", "–");
+    if (["Walk", "Bicycle", "Rarely", "0"].includes(clean)) return 5;
+    if (["1–4 Hours", "1–2", "Vegan", "Vegetarian", "Rarely"].includes(clean)) return 4;
+    if (["Public Transport", "Monthly", "Mixed"].includes(clean)) return 3;
+    if (["Weekly", "4–8 Hours", "3–5"].includes(clean)) return 2;
+    if (["Car", "Frequently", "8+ Hours", "5+"].includes(clean)) return 1;
+    return 3;
+  };
+
   // --- What-If Simulator State ---
   const [simTransportation, setSimTransportation] = useState(latest.transportation);
   const [simElectricity, setSimElectricity] = useState(latest.electricity);
   const [simDiet, setSimDiet] = useState(latest.diet);
   const [simShopping, setSimShopping] = useState(latest.shopping);
   const [simFlights, setSimFlights] = useState(latest.flights);
+
+  const simDifficultyAvg = Math.round(
+    (getDiffScore(simTransportation) +
+     getDiffScore(simElectricity) +
+     getDiffScore(simDiet) +
+     getDiffScore(simShopping) +
+     getDiffScore(simFlights)) / 5
+  );
+
+  const simSavingsAvg = Math.round(
+    (getSavingsScore(simTransportation) +
+     getSavingsScore(simElectricity) +
+     getSavingsScore(simDiet) +
+     getSavingsScore(simShopping) +
+     getSavingsScore(simFlights)) / 5
+  );
+
+  const getSimDifficultyLabel = (score: number) => {
+    if (score <= 1) return { text: "Very Easy", color: "text-emerald-400" };
+    if (score === 2) return { text: "Easy", color: "text-emerald-300" };
+    if (score === 3) return { text: "Moderate", color: "text-amber-300" };
+    if (score === 4) return { text: "Hard", color: "text-rose-300" };
+    return { text: "Very Hard", color: "text-rose-400" };
+  };
+
+  const getSimSavingsLabel = (score: number) => {
+    if (score <= 1) return { text: "Minimal", color: "text-rose-400" };
+    if (score === 2) return { text: "Low", color: "text-rose-300" };
+    if (score === 3) return { text: "Moderate", color: "text-amber-300" };
+    if (score === 4) return { text: "Significant", color: "text-emerald-300" };
+    return { text: "Maximum", color: "text-emerald-400" };
+  };
 
   // --- Roadmap Completion State ---
   const [completedWeeks, setCompletedWeeks] = useState<Record<string, boolean>>({});
@@ -205,6 +277,68 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
 
   return (
     <div className="space-y-8">
+      {/* Sustainability Achievement System */}
+      <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="text-4xl p-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center">
+              {levelInfo.badge}
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Current Standing</span>
+              <h3 className="font-display font-bold text-slate-800 text-lg leading-tight mt-0.5">{levelInfo.name}</h3>
+              <p className="text-slate-500 text-xs mt-1">Role: <span className="font-semibold text-slate-700">{levelInfo.label}</span></p>
+            </div>
+          </div>
+          
+          <div className="flex-1 max-w-md">
+            <div className="flex justify-between items-baseline mb-2">
+              <span className="text-xs font-semibold text-slate-500">Progress to Next Tier</span>
+              <span className="text-xs font-bold text-slate-700">{points} / {levelInfo.nextLimit} pts</span>
+            </div>
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden relative">
+              <div 
+                className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
+                style={{ width: `${levelProgress}%` }} 
+              />
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1.5 font-medium">
+              <span>{levelInfo.name.split(":")[0]}</span>
+              <span>Next Milestone: {levelInfo.nextLimit} pts</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-100 mt-6 pt-6">
+          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">Earned Badges & Achievements</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {badgesList.map((badge) => (
+              <div 
+                key={badge.id} 
+                className={`p-4 rounded-2xl border text-center transition-all ${
+                  badge.unlocked 
+                    ? "bg-emerald-50/50 border-emerald-200 text-slate-800" 
+                    : "bg-slate-50/40 border-slate-100 text-slate-400 opacity-60"
+                }`}
+              >
+                <div className={`text-2xl mb-2 mx-auto w-12 h-12 rounded-full flex items-center justify-center ${
+                  badge.unlocked ? "bg-emerald-100/60" : "bg-slate-200/50"
+                }`}>
+                  {badge.icon}
+                </div>
+                <h5 className="font-bold text-xs leading-tight">{badge.name}</h5>
+                <p className="text-[9px] mt-1 leading-snug">{badge.desc}</p>
+                <span className={`inline-block text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-2 ${
+                  badge.unlocked ? "bg-emerald-200 text-emerald-800" : "bg-slate-200 text-slate-500"
+                }`}>
+                  {badge.unlocked ? "Unlocked" : "Locked"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Active Coach Insight Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-3xl border border-emerald-700 shadow-md">
         <div className="flex items-start gap-3.5">
@@ -403,6 +537,27 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
                   <span className="text-slate-400 text-[10px] font-semibold">/ 100</span>
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-700/60 pt-3 mt-3">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-medium block">Difficulty Level</span>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-xs font-bold ${getSimDifficultyLabel(simDifficultyAvg).color}`}>
+                      {getSimDifficultyLabel(simDifficultyAvg).text}
+                    </span>
+                    <span className="text-slate-500 text-[10px]">({simDifficultyAvg}/5)</span>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-medium block">Financial Savings</span>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-xs font-bold ${getSimSavingsLabel(simSavingsAvg).color}`}>
+                      {getSimSavingsLabel(simSavingsAvg).text}
+                    </span>
+                    <span className="text-slate-500 text-[10px]">({simSavingsAvg}/5)</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="border-t border-slate-700 pt-4 mt-4">
@@ -484,6 +639,35 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
                       {r.explanation}
                     </p>
                   )}
+
+                  <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                    {r.why_recommended && (
+                      <div>
+                        <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400">Why Recommended</span>
+                        <p className="text-[10px] text-slate-600 leading-normal font-medium">{r.why_recommended}</p>
+                      </div>
+                    )}
+                    {r.expected_impact && (
+                      <div>
+                        <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400">Expected Impact</span>
+                        <p className="text-[10px] text-slate-600 leading-normal font-medium">{r.expected_impact}</p>
+                      </div>
+                    )}
+                    {r.confidence_level && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">AI Confidence</span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                          r.confidence_level === "High" 
+                            ? "bg-emerald-100 text-emerald-800" 
+                            : r.confidence_level === "Medium"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-rose-100 text-rose-800"
+                        }`}>
+                          {r.confidence_level}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-4">
@@ -507,6 +691,128 @@ export default function DashboardOverview({ data, history }: DashboardOverviewPr
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Carbon Forecast Panel */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm">
+        <div className="flex items-center gap-2 mb-6">
+          <TrendingDown className="w-5 h-5 text-emerald-600" />
+          <h3 className="font-display font-bold text-slate-800 text-lg">AI Carbon Reduction Forecast</h3>
+        </div>
+        <p className="text-slate-500 text-xs mb-8 max-w-xl leading-relaxed">
+          Based on your assessment and personalized roadmap, CarbonCoach AI projects your footprint reduction across key milestones as you adapt your daily habits.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 1 Month */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 border border-emerald-100 p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">1-Month Horizon</span>
+              <div className="flex items-baseline gap-1 mt-3">
+                <span className="font-display font-extrabold text-3xl text-emerald-800 tracking-tight">-3.5%</span>
+                <span className="text-slate-400 text-xs font-semibold">CO₂ reduction</span>
+              </div>
+              <p className="text-xs text-slate-600 mt-2 font-medium">Habit Adaptation Phase</p>
+              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Initial reduction driven by consciousness around electricity usage and commuting choice adjustments.</p>
+            </div>
+            <div className="border-t border-emerald-150 pt-3 mt-4 text-[10px] font-semibold text-emerald-800">
+              Est. Saved: ~{Math.round(latest.carbon_data.total * 0.035).toLocaleString()} kg CO₂/yr
+            </div>
+          </div>
+
+          {/* 3 Months */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 border border-emerald-100 p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">3-Month Horizon</span>
+              <div className="flex items-baseline gap-1 mt-3">
+                <span className="font-display font-extrabold text-3xl text-emerald-800 tracking-tight">-12.0%</span>
+                <span className="text-slate-400 text-xs font-semibold">CO₂ reduction</span>
+              </div>
+              <p className="text-xs text-slate-600 mt-2 font-medium">Medium-term Optimization</p>
+              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Sustained diet transitions, optimized appliance patterns, and shifting local travel methods.</p>
+            </div>
+            <div className="border-t border-emerald-150 pt-3 mt-4 text-[10px] font-semibold text-emerald-800">
+              Est. Saved: ~{Math.round(latest.carbon_data.total * 0.12).toLocaleString()} kg CO₂/yr
+            </div>
+          </div>
+
+          {/* 6 Months */}
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 border border-emerald-600 p-6 rounded-2xl text-white flex flex-col justify-between shadow-md">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200">6-Month Target</span>
+              <div className="flex items-baseline gap-1 mt-3">
+                <span className="font-display font-extrabold text-3xl text-white tracking-tight">-25.0%</span>
+                <span className="text-emerald-200 text-xs font-semibold">CO₂ reduction</span>
+              </div>
+              <p className="text-xs text-emerald-100 mt-2 font-medium">Full Roadmap Completion</p>
+              <p className="text-[10px] text-emerald-100/90 mt-1 leading-relaxed">Full adoption of low-carbon travel alternatives, waste reduction habits, and energy improvements.</p>
+            </div>
+            <div className="border-t border-emerald-400/40 pt-3 mt-4 text-[10px] font-semibold text-emerald-100">
+              Est. Saved: ~{Math.round(latest.carbon_data.total * 0.25).toLocaleString()} kg CO₂/yr
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recommendation Priority Matrix */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm">
+        <div className="flex items-center gap-2 mb-6">
+          <Sliders className="w-5 h-5 text-emerald-600" />
+          <h3 className="font-display font-bold text-slate-800 text-lg">AI Recommendation Priority Matrix</h3>
+        </div>
+        <p className="text-slate-500 text-xs mb-6 max-w-xl leading-relaxed">
+          All calculated recommendations mapped across impact, effort difficulty, financial savings, and overall Priority Score.
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <th className="pb-3 pr-4">Action Recommendation</th>
+                <th className="pb-3 px-4">Carbon Impact</th>
+                <th className="pb-3 px-4">Effort / Difficulty</th>
+                <th className="pb-3 px-4">Financial Savings</th>
+                <th className="pb-3 pl-4 text-right">Priority Score</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 text-xs">
+              {data.recommendations.map((r, idx) => {
+                const difficultyVal = getDiffScore(r.difficulty);
+                const savingsVal = getSavingsScore(r.difficulty);
+                
+                return (
+                  <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5 pr-4 font-semibold text-slate-800">{r.title}</td>
+                    <td className="py-3.5 px-4">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        r.impact === "Critical" || r.impact === "High"
+                          ? "bg-rose-50 text-rose-700 border border-rose-100"
+                          : "bg-teal-50 text-teal-700 border border-teal-100"
+                      }`}>
+                        {r.impact} (-{r.reduction} kg)
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-medium text-slate-600">
+                      <div className="flex items-center gap-1">
+                        <span>{r.difficulty}</span>
+                        <span className="text-slate-400 text-[10px]">({difficultyVal}/5)</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 font-medium text-slate-600">
+                      <div className="flex items-center gap-1">
+                        <span className="text-emerald-700 font-semibold">
+                          {savingsVal >= 4 ? "High" : savingsVal === 3 ? "Medium" : "Low"}
+                        </span>
+                        <span className="text-slate-400 text-[10px]">({savingsVal}/5)</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 pl-4 text-right font-bold text-slate-800">{r.priority_score}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 

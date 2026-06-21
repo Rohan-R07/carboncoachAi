@@ -100,6 +100,9 @@ class Recommendation(BaseModel):
     difficulty_score: int
     priority_score: int
     explanation: str = ""
+    why_recommended: str = ""
+    expected_impact: str = ""
+    confidence_level: str = "High"
 
 class Challenge(BaseModel):
     id: str

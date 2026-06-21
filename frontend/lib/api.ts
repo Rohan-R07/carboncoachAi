@@ -61,6 +61,10 @@ export interface Recommendation {
   impact_score: number;
   difficulty_score: number;
   priority_score: number;
+  explanation?: string;
+  why_recommended?: string;
+  expected_impact?: string;
+  confidence_level?: string;
 }
 
 export interface Challenge {

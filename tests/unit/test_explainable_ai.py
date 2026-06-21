@@ -31,6 +31,11 @@ def test_recommendation_explanation_exists():
     for r in recs:
         assert r.explanation != ""
         assert len(r.explanation) > 10
+        assert r.why_recommended != ""
+        assert len(r.why_recommended) > 10
+        assert r.expected_impact != ""
+        assert len(r.expected_impact) > 10
+        assert r.confidence_level in ["High", "Medium", "Low"]
 
 def test_assessment_notes_sanitization():
     """
