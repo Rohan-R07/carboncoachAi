@@ -55,6 +55,37 @@ export default function DashboardPage() {
     loadData(false);
   }, []);
 
+  useEffect(() => {
+    if (!loading && data && data.has_assessment) {
+      // Lock current history state
+      window.history.pushState(null, "", window.location.href);
+
+      const handlePopState = (event: PopStateEvent) => {
+        const confirmLeave = window.confirm("Are you sure you want to quit and go back?");
+        if (confirmLeave) {
+          router.push("/");
+        } else {
+          window.history.pushState(null, "", window.location.href);
+        }
+      };
+
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        const msg = "Are you sure you want to quit and go back?";
+        e.preventDefault();
+        e.returnValue = msg;
+        return msg;
+      };
+
+      window.addEventListener("popstate", handlePopState);
+      window.addEventListener("beforeunload", handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [loading, data, router]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
