@@ -1,4 +1,3 @@
-
 # CarbonCoach AI
 
 🚀 **Live Frontend Deployment:** [https://frontend-drab-ten-8l94eaud41.vercel.app](https://frontend-drab-ten-8l94eaud41.vercel.app)  
